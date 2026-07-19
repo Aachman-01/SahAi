@@ -6,7 +6,7 @@
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
-    "start": "node --env-file-if-exists=.env server.js",
+    "start": "node server.js",
     "dev": "node --watch server.js",
     "reset": "node -e \"require('fs').rmSync(require('path').join(__dirname,'sahai.db'),{force:true});require('fs').rmSync(require('path').join(__dirname,'sahai.db-wal'),{force:true});require('fs').rmSync(require('path').join(__dirname,'sahai.db-shm'),{force:true});console.log('Database reset.')\""
   },

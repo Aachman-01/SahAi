@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { User, Role } from '@/types';
 import { post, get, tokenStore } from '@/lib/api';
+import { getSupabaseClient, hasSupabaseConfig } from '@/lib/supabase';
 
 interface LoginArgs { role?: Role; name?: string; phone?: string; otp?: string; email?: string; password?: string }
 interface SignupArgs { name: string; email: string; password: string; role?: Role }
@@ -12,6 +13,9 @@ interface AuthCtx {
   loginWith: (args: LoginArgs) => Promise<User>;
   signup: (args: SignupArgs) => Promise<User>;
   sendOtp: (phone: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  completeGoogleLogin: (accessToken: string) => Promise<User>;
+  loginAsGuest: () => Promise<User>;
   logout: () => void;
 }
 const Ctx = createContext<AuthCtx | undefined>(undefined);
@@ -50,14 +54,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await post('/api/auth/otp/send', { phone });
   };
 
+  const loginWithGoogle = async () => {
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: { prompt: 'select_account' },
+      },
+    });
+    if (error) throw error;
+  };
+
+  const completeGoogleLogin = useCallback(async (accessToken: string): Promise<User> => {
+    const { token, user: u } = await post<{ token: string; user: User }>('/api/auth/google', { accessToken });
+    tokenStore.set(token);
+    setUser(u);
+    return u;
+  }, []);
+
+  const loginAsGuest = async (): Promise<User> => {
+    const { token, user: u } = await post<{ token: string; user: User }>('/api/auth/guest');
+    tokenStore.set(token);
+    setUser(u);
+    return u;
+  };
+
   const logout = () => {
     post('/api/auth/logout').catch(() => {});
     tokenStore.clear();
     setUser(null);
+    if (hasSupabaseConfig()) getSupabaseClient().auth.signOut().catch(() => {});
   };
 
   return (
-    <Ctx.Provider value={{ user, loading, login, loginWith, signup, sendOtp, logout }}>
+    <Ctx.Provider value={{ user, loading, login, loginWith, signup, sendOtp, loginWithGoogle, completeGoogleLogin, loginAsGuest, logout }}>
       {children}
     </Ctx.Provider>
   );

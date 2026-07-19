@@ -28,4 +28,3 @@ server/sahai.db-wal
 server/sahai.db-shm
 server/server.log
 server/server.pid
-server/.env

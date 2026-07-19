@@ -8,6 +8,7 @@ import { DashboardLayout } from '@/layouts/DashboardLayout';
 import LandingPage from '@/pages/LandingPage';
 import LanguagePage from '@/pages/LanguagePage';
 import LoginPage from '@/pages/LoginPage';
+import AuthCallbackPage from '@/pages/AuthCallbackPage';
 import ChatPage from '@/pages/ChatPage';
 import DashboardPage from '@/pages/DashboardPage';
 import ProfilePage from '@/pages/ProfilePage';
@@ -35,6 +36,7 @@ function AnimatedRoutes() {
         <Route path="/" element={<PublicLayout><LandingPage /></PublicLayout>} />
         <Route path="/language" element={<LanguagePage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/maintenance" element={<MaintenancePage />} />
         <Route path="/customer/:vendorSlug" element={<CustomerWebsitePage />} />

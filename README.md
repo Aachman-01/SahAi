@@ -136,3 +136,28 @@ ALLOW_DEMO_AUTH=false
 `DATABASE_URL`, `APP_ADMIN_PASSWORD`, the database password, and `CLOUDINARY_API_SECRET` are backend-only secrets. Never use a `VITE_` prefix or commit real values. Tables have Row Level Security enabled with no browser policies because all access is intentionally routed through the authenticated Render API. Public signup always creates a vendor account; admin routes enforce the admin role. Production admin credentials are provisioned from Render environment variables, and demo role/OTP login is disabled by default when PostgreSQL is active.
 
 Existing SQLite rows are not automatically copied to Supabase. New deployments seed the demo dataset when PostgreSQL is empty unless `SEED_DEMO_DATA=false`. Real existing data requires a one-time migration before switching production traffic.
+
+## Google sign-in with Supabase Auth
+
+Google login uses Supabase Auth for the account chooser and identity verification, then exchanges the verified Supabase access token for the existing SahAI backend session. New Google users receive a normal isolated vendor record; existing email accounts are linked by verified email. Browser-supplied names/emails are never trusted.
+
+1. In **Google Cloud Console**, create an OAuth 2.0 Client ID of type **Web application**. Add the frontend origins (`http://localhost:5173` and the Render static-site URL) under Authorized JavaScript origins. Add Supabase's callback URL under Authorized redirect URIs: `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`.
+2. In **Supabase → Authentication → Providers → Google**, enable Google and enter the Google Client ID and Client Secret.
+3. In **Supabase → Authentication → URL Configuration**, set the production frontend as Site URL and add `http://localhost:5173/auth/callback` plus the Render frontend `/auth/callback` URL to Redirect URLs.
+4. Add to the frontend environment (public values):
+
+```env
+VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+VITE_SUPABASE_ANON_KEY=your_publishable_or_anon_key
+```
+
+5. Add the same project URL/key to the Render backend so it can verify access tokens:
+
+```env
+SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_ANON_KEY=your_publishable_or_anon_key
+```
+
+Never use `SUPABASE_SERVICE_ROLE_KEY` in the frontend. The Google Client Secret stays only inside Supabase's provider configuration. The login request includes `prompt=select_account`, so Google displays the account chooser even when a Google session already exists.
+
+Guest login uses `/api/auth/guest` and creates a separate guest user/vendor workspace. It does not re-enable shared demo-role authentication.

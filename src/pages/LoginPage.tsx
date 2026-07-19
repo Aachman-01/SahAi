@@ -21,7 +21,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [mode, setMode] = useState<'login' | 'signup'>('login');
-  const { loginWith, signup, sendOtp: requestOtp } = useAuth();
+  const { loginWith, signup, sendOtp: requestOtp, loginWithGoogle, loginAsGuest } = useAuth();
   const nav = useNavigate();
 
   const submitEmail = async (role: 'vendor' | 'admin', to: string) => {
@@ -72,14 +72,24 @@ export default function LoginPage() {
     }
   };
 
-  const doLogin = async (role: 'vendor' | 'admin' | 'guest', to: string, name?: string) => {
+  const startGoogleLogin = async () => {
     try {
       setBusy(true);
-      await loginWith({ role, name });
-      toast.success(role === 'admin' ? 'Admin signed in' : 'Welcome!');
-      nav(to);
-    } catch {
-      toast.error('Login failed. Is the backend running?');
+      await loginWithGoogle();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Google login could not be started');
+      setBusy(false);
+    }
+  };
+
+  const continueAsGuest = async () => {
+    try {
+      setBusy(true);
+      await loginAsGuest();
+      toast.success('Guest workspace created');
+      nav('/dashboard');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || 'Guest login failed');
     } finally {
       setBusy(false);
     }
@@ -189,10 +199,10 @@ export default function LoginPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" onClick={() => doLogin('vendor', '/dashboard')} disabled={busy}>
+            <Button variant="outline" onClick={startGoogleLogin} disabled={busy}>
               <Chrome className="h-4 w-4" /> Google
             </Button>
-            <Button variant="outline" onClick={() => doLogin('guest', '/dashboard', 'Guest')} disabled={busy}>
+            <Button variant="outline" onClick={continueAsGuest} disabled={busy}>
               <Sparkles className="h-4 w-4" /> Guest
             </Button>
           </div>

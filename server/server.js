@@ -154,6 +154,31 @@ function publicUser(user) {
   return { id: user.id, name: user.name, phone: user.phone, email: user.email || undefined, role: user.role, avatar: user.avatar || undefined };
 }
 
+async function createVendorRecord(name, phone = '') {
+  const vendorId = uid('v');
+  await db.prepare('INSERT INTO vendors (id,name,owner,phone,upiId,category,location,hours,logo,photo,rating,joinedAt,status,description) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+    .run(vendorId, name || 'My Business', name || '', phone, '', 'General', '', '', null, null, 0, new Date().toISOString(), 'active', '');
+  return vendorId;
+}
+
+async function verifySupabaseAccessToken(accessToken) {
+  const supabaseUrl = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
+  const publishableKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '';
+  if (!supabaseUrl || !publishableKey) {
+    const error = new Error('Google authentication is not configured on the backend');
+    error.statusCode = 503;
+    throw error;
+  }
+  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: {
+      apikey: publishableKey,
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  if (!response.ok) return null;
+  return response.json();
+}
+
 // Sign up: creates a real user row with a hashed password.
 route('POST', '/api/auth/signup', async (req, res, _p, body) => {
   const name = (body.name || '').trim();
@@ -184,6 +209,57 @@ route('POST', '/api/auth/signup', async (req, res, _p, body) => {
   await db.prepare('INSERT INTO users (id, name, phone, email, role, avatar, vendorId, passwordHash, passwordSalt) VALUES (?,?,?,?,?,?,?,?,?)')
     .run(userId, name, body.phone || '', email, role, null, vendorId, hash, salt);
 
+  const token = await startSession(userId);
+  const user = await db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+  send(res, 200, { token, user: publicUser(user) });
+}, false);
+
+// Exchange a verified Supabase Google session for a SahAI API session.
+// Email/name/avatar are read only from Supabase's authenticated user endpoint,
+// never trusted from browser-supplied profile fields.
+route('POST', '/api/auth/google', async (req, res, _p, body) => {
+  const accessToken = body && body.accessToken;
+  if (!accessToken || typeof accessToken !== 'string') return send(res, 400, { error: 'Google access token is required' });
+
+  let authUser;
+  try {
+    authUser = await verifySupabaseAccessToken(accessToken);
+  } catch (error) {
+    return send(res, error.statusCode || 502, { error: error.message || 'Could not verify Google login' });
+  }
+  const email = String(authUser && authUser.email || '').trim().toLowerCase();
+  if (!authUser || !email) return send(res, 401, { error: 'Google session is invalid or expired' });
+
+  const metadata = authUser.user_metadata || {};
+  const googleName = String(metadata.full_name || metadata.name || email.split('@')[0]).trim();
+  const googleAvatar = String(metadata.avatar_url || metadata.picture || '').trim() || null;
+  let user = await db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+
+  if (!user) {
+    const userId = uid('u');
+    const vendorId = await createVendorRecord(googleName, '');
+    await db.prepare('INSERT INTO users (id,name,phone,email,role,avatar,vendorId,passwordHash,passwordSalt) VALUES (?,?,?,?,?,?,?,?,?)')
+      .run(userId, googleName, '', email, 'vendor', googleAvatar, vendorId, null, null);
+    user = await db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+  } else {
+    const nextName = user.name || googleName;
+    const nextAvatar = googleAvatar || user.avatar || null;
+    await db.prepare('UPDATE users SET name=?, avatar=? WHERE id=?').run(nextName, nextAvatar, user.id);
+    user = await db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
+  }
+
+  const token = await startSession(user.id);
+  send(res, 200, { token, user: publicUser(user) });
+}, false);
+
+// Production-safe guest access. Each guest receives an isolated workspace
+// instead of sharing the seeded demo user's business data.
+route('POST', '/api/auth/guest', async (_req, res) => {
+  const userId = uid('u_guest');
+  const guestName = 'Guest';
+  const vendorId = await createVendorRecord('Guest Business', '');
+  await db.prepare('INSERT INTO users (id,name,phone,email,role,avatar,vendorId,passwordHash,passwordSalt) VALUES (?,?,?,?,?,?,?,?,?)')
+    .run(userId, guestName, '', null, 'guest', null, vendorId, null, null);
   const token = await startSession(userId);
   const user = await db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
   send(res, 200, { token, user: publicUser(user) });
@@ -678,6 +754,7 @@ route('GET', '/api/health', async (req, res) => send(res, 200, {
   time: new Date().toISOString(),
   imageStorage: cloudinaryStorage.isConfigured() ? 'cloudinary' : 'local',
   database: databaseProvider,
+  googleAuth: Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY)),
 }), false);
 
 // ---------- static file serving for uploads ----------
