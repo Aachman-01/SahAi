@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 255 255 255;
+    --foreground: 15 23 42;
+  }
+  .dark {
+    --background: 9 9 12;
+    --foreground: 237 237 240;
+  }
+  * {
+    border-color: rgb(229 231 235);
+  }
+  .dark * {
+    border-color: rgb(39 39 42);
+  }
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: rgb(248 250 252);
+    color: rgb(15 23 42);
+  }
+  .dark body {
+    background-color: rgb(9 9 12);
+    color: rgb(237 237 240);
+  }
+}
+
+@layer components {
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+  }
+  .dark .glass {
+    background: rgba(24, 24, 27, 0.7);
+    border: 1px solid rgba(63, 63, 70, 0.4);
+  }
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #16A34A 0%, #2563EB 100%);
+  }
+  .gradient-primary {
+    background-image: linear-gradient(135deg, #16A34A 0%, #22c55e 100%);
+  }
+  .gradient-hero {
+    background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(22,163,74,0.15), transparent),
+                      radial-gradient(ellipse 60% 50% at 80% 50%, rgba(37,99,235,0.12), transparent);
+  }
+  .dark .gradient-hero {
+    background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(22,163,74,0.18), transparent),
+                      radial-gradient(ellipse 60% 50% at 80% 50%, rgba(37,99,235,0.14), transparent);
+  }
+  .card {
+    @apply rounded-2xl border bg-white shadow-card transition-all;
+  }
+  .dark .card {
+    @apply bg-zinc-900 border-zinc-800;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .skeleton {
+    @apply relative overflow-hidden bg-gray-200 dark:bg-zinc-800 rounded;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transform: translateX(-100%);
+    animation: shimmer 1.5s infinite;
+  }
+  .dark .skeleton::after {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  }
+}
