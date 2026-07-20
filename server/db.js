@@ -87,7 +87,7 @@ async function initializeSchema() {
   await db.exec(`
     CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, name TEXT, phone TEXT, email TEXT UNIQUE, role TEXT, avatar TEXT, vendorId TEXT, passwordHash TEXT, passwordSalt TEXT, authProviderId TEXT);
     CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, userId TEXT, createdAt TEXT);
-    CREATE TABLE IF NOT EXISTS vendors (id TEXT PRIMARY KEY, name TEXT, owner TEXT, phone TEXT, upiId TEXT, category TEXT, location TEXT, hours TEXT, logo TEXT, photo TEXT, rating REAL, joinedAt TEXT, status TEXT, description TEXT);
+    CREATE TABLE IF NOT EXISTS vendors (id TEXT PRIMARY KEY, username TEXT, name TEXT, owner TEXT, phone TEXT, upiId TEXT, category TEXT, location TEXT, hours TEXT, logo TEXT, photo TEXT, rating REAL, joinedAt TEXT, status TEXT, description TEXT);
     CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, vendorId TEXT, name TEXT, category TEXT, price REAL, offerPrice REAL, stock INTEGER, available INTEGER, description TEXT, image TEXT, popular INTEGER, discount REAL, createdAt TEXT);
     CREATE TABLE IF NOT EXISTS transactions (id TEXT PRIMARY KEY, vendorId TEXT, vendor TEXT, amount REAL, method TEXT, status TEXT, date TEXT);
     CREATE TABLE IF NOT EXISTS schemes (id TEXT PRIMARY KEY, name TEXT, ministry TEXT, category TEXT, eligibility TEXT, documents TEXT, benefits TEXT, applyUrl TEXT);
@@ -103,6 +103,9 @@ async function initializeSchema() {
   if (!userCols.includes('passwordHash')) await db.exec('ALTER TABLE users ADD COLUMN passwordHash TEXT;');
   if (!userCols.includes('passwordSalt')) await db.exec('ALTER TABLE users ADD COLUMN passwordSalt TEXT;');
   if (!userCols.includes('authProviderId')) await db.exec('ALTER TABLE users ADD COLUMN authProviderId TEXT;');
+  const vendorCols = (await db.prepare('PRAGMA table_info(vendors)').all()).map((c) => c.name);
+  if (!vendorCols.includes('username')) await db.exec('ALTER TABLE vendors ADD COLUMN username TEXT;');
+  await db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_vendors_username_unique ON vendors(username COLLATE NOCASE) WHERE username IS NOT NULL AND username <> ''; CREATE INDEX IF NOT EXISTS idx_vendors_username_search ON vendors(username COLLATE NOCASE);");
   const uploadCols = (await db.prepare('PRAGMA table_info(uploaded_files)').all()).map((c) => c.name);
   if (!uploadCols.includes('storageProvider')) await db.exec("ALTER TABLE uploaded_files ADD COLUMN storageProvider TEXT DEFAULT 'local';");
   if (!uploadCols.includes('publicId')) await db.exec('ALTER TABLE uploaded_files ADD COLUMN publicId TEXT;');

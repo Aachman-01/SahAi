@@ -110,7 +110,7 @@ const toProduct = (r) => ({
   discount: r.discount ?? undefined,
 });
 const toVendor = (r) => ({
-  id: r.id, name: r.name, owner: r.owner, phone: r.phone, upiId: r.upiId,
+  id: r.id, username: r.username || '', name: r.name, owner: r.owner, phone: r.phone, upiId: r.upiId,
   category: r.category, location: r.location, hours: r.hours, logo: r.logo || undefined,
   photo: r.photo || undefined, rating: r.rating, joinedAt: r.joinedAt, status: r.status,
   description: r.description || '',
@@ -463,6 +463,22 @@ route('GET', '/api/profile', async (req, res, _p, _b, user) => {
 route('PUT', '/api/profile', async (req, res, _p, body, user) => {
   const id = currentVendorId(user);
   const cur = await db.prepare('SELECT * FROM vendors WHERE id = ?').get(id);
+  if (!cur) return send(res, 404, { error: 'Vendor not found' });
+
+  let nextUsername = cur.username || '';
+  if (Object.prototype.hasOwnProperty.call(body || {}, 'username')) {
+    nextUsername = String(body.username || '').trim().toLowerCase();
+    const reserved = new Set(['admin', 'api', 'dashboard', 'login', 'signup', 'support', 'sahai', 'vendors', 'settings']);
+    if (!/^[a-z0-9][a-z0-9._]{2,29}$/.test(nextUsername)) {
+      return send(res, 400, { error: 'Choose a valid username', fields: { username: 'Use 3–30 lowercase letters, numbers, dots or underscores' } });
+    }
+    if (reserved.has(nextUsername)) {
+      return send(res, 400, { error: 'Choose a different username', fields: { username: 'This username is reserved' } });
+    }
+    const duplicate = await db.prepare('SELECT id FROM vendors WHERE LOWER(username) = ? AND id <> ?').get(nextUsername, id);
+    if (duplicate) return send(res, 409, { error: 'Username is already taken', fields: { username: 'This username is already taken' } });
+  }
+
   // Support explicit null to CLEAR profile picture / photo.
   const nextLogo = Object.prototype.hasOwnProperty.call(body, 'logo') ? (body.logo || null) : cur.logo;
   const nextPhoto = Object.prototype.hasOwnProperty.call(body, 'photo') ? (body.photo || null) : cur.photo;
@@ -471,9 +487,16 @@ route('PUT', '/api/profile', async (req, res, _p, body, user) => {
   if (cur.logo && cur.logo !== nextLogo) await deleteUploadIfOwned(cur.logo, user.id);
   if (cur.photo && cur.photo !== nextPhoto) await deleteUploadIfOwned(cur.photo, user.id);
 
-  const f = { ...cur, ...body, logo: nextLogo, photo: nextPhoto };
-  await db.prepare('UPDATE vendors SET name=?,owner=?,phone=?,upiId=?,category=?,location=?,hours=?,description=?,logo=?,photo=? WHERE id=?')
-    .run(f.name, f.owner, f.phone, f.upiId, f.category, f.location, f.hours, f.description, nextLogo, nextPhoto, id);
+  const f = { ...cur, ...body, username: nextUsername, logo: nextLogo, photo: nextPhoto };
+  try {
+    await db.prepare('UPDATE vendors SET username=?,name=?,owner=?,phone=?,upiId=?,category=?,location=?,hours=?,description=?,logo=?,photo=? WHERE id=?')
+      .run(nextUsername, f.name, f.owner, f.phone, f.upiId, f.category, f.location, f.hours, f.description, nextLogo, nextPhoto, id);
+  } catch (error) {
+    if (/unique|duplicate/i.test(String(error && error.message || error))) {
+      return send(res, 409, { error: 'Username is already taken', fields: { username: 'This username is already taken' } });
+    }
+    throw error;
+  }
   send(res, 200, toVendor(await db.prepare('SELECT * FROM vendors WHERE id = ?').get(id)));
 });
 
@@ -807,6 +830,56 @@ route('POST', '/api/notifications/read-all', async (req, res, _p, _b, user) => {
 route('DELETE', '/api/notifications/:id', async (req, res, p, _b, user) => {
   await db.prepare('DELETE FROM notifications WHERE id = ? AND userId = ?').run(p.id, user.id);
   send(res, 200, { ok: true, id: p.id });
+});
+
+// --- Read-only vendor discovery by unique username ---
+route('GET', '/api/vendors/search', async (req, res, _p, _b, user) => {
+  const query = String(new URL(req.url, `http://localhost:${PORT}`).searchParams.get('q') || '').trim().toLowerCase().replace(/^@/, '');
+  if (query.length < 2) return send(res, 200, []);
+  const like = `%${query}%`;
+  const rows = await db.prepare(`SELECT id,username,name,owner,category,location,logo,rating
+    FROM vendors
+    WHERE username IS NOT NULL AND username <> '' AND id <> ? AND status = 'active'
+      AND (LOWER(username) LIKE ? OR LOWER(name) LIKE ?)
+    ORDER BY CASE WHEN LOWER(username) = ? THEN 0 ELSE 1 END, username ASC
+    LIMIT 20`).all(currentVendorId(user), like, like, query);
+  send(res, 200, rows.map((vendor) => ({
+    username: vendor.username, name: vendor.name, owner: vendor.owner,
+    category: vendor.category, location: vendor.location,
+    logo: vendor.logo || undefined, rating: vendor.rating || 0,
+  })));
+});
+
+route('GET', '/api/vendors/:username', async (req, res, p) => {
+  const username = String(p.username || '').trim().toLowerCase();
+  const vendor = await db.prepare("SELECT * FROM vendors WHERE LOWER(username) = ? AND status = 'active'").get(username);
+  if (!vendor) return send(res, 404, { error: 'Vendor not found' });
+
+  const products = (await db.prepare('SELECT * FROM products WHERE vendorId = ? AND available = 1 ORDER BY createdAt DESC, id DESC').all(vendor.id)).map(toProduct);
+  const gallery = (await db.prepare('SELECT * FROM gallery_images WHERE vendorId = ? ORDER BY sortOrder ASC, createdAt ASC').all(vendor.id)).map(toGallery);
+  const businessCard = await kvGet('vendor:' + vendor.id, 'businessCard', seed.BUSINESS_CARD);
+  const publicVendor = {
+    username: vendor.username,
+    name: vendor.name,
+    owner: vendor.owner,
+    phone: vendor.phone,
+    upiId: (businessCard.showUpi || businessCard.showQr) ? vendor.upiId : '',
+    category: vendor.category,
+    location: vendor.location,
+    hours: vendor.hours,
+    logo: vendor.logo || undefined,
+    photo: vendor.photo || undefined,
+    rating: vendor.rating || 0,
+    description: vendor.description || '',
+  };
+  send(res, 200, {
+    vendor: publicVendor,
+    products,
+    gallery,
+    marketing: seed.MARKETING,
+    businessCard,
+    readOnly: true,
+  });
 });
 
 // --- Admin ---

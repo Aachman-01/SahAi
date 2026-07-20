@@ -11,6 +11,7 @@ const COMMANDS = [
   { label: 'Website Builder', to: '/dashboard/website' },
   { label: 'Marketing Kit', to: '/dashboard/marketing' },
   { label: 'Business Card', to: '/dashboard/business-card' },
+  { label: 'Vendor Search', to: '/dashboard/vendors' },
   { label: 'Govt Schemes', to: '/dashboard/schemes' },
   { label: 'Analytics', to: '/dashboard/analytics' },
   { label: 'Settings', to: '/dashboard/settings' },

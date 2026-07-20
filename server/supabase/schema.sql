@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   token text PRIMARY KEY, userid text NOT NULL, createdat text NOT NULL
 );
 CREATE TABLE IF NOT EXISTS vendors (
-  id text PRIMARY KEY, name text, owner text, phone text, upiid text,
+  id text PRIMARY KEY, username text, name text, owner text, phone text, upiid text,
   category text, location text, hours text, logo text, photo text,
   rating double precision, joinedat text, status text, description text
 );
@@ -55,7 +55,10 @@ CREATE TABLE IF NOT EXISTS uploaded_files (
   publicid text
 );
 ALTER TABLE users ADD COLUMN IF NOT EXISTS authproviderid text;
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS username text;
 CREATE INDEX IF NOT EXISTS idx_users_authproviderid ON users(authproviderid);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vendors_username_unique ON vendors ((lower(username))) WHERE username IS NOT NULL AND username <> '';
+CREATE INDEX IF NOT EXISTS idx_vendors_username_search ON vendors ((lower(username)));
 CREATE INDEX IF NOT EXISTS idx_sessions_userid ON sessions(userid);
 CREATE INDEX IF NOT EXISTS idx_products_vendorid ON products(vendorid);
 CREATE INDEX IF NOT EXISTS idx_transactions_vendorid ON transactions(vendorid);

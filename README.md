@@ -179,3 +179,9 @@ Obtain it from Supabase Project Settings → API Keys. Never expose this key in 
 Local SEO has been fully removed and replaced with a profile-powered Business Card section at `/dashboard/business-card`. Each vendor can choose modern/classic/minimal templates, portrait or landscape layout, preset/custom colors, typography, tagline, profile field visibility, photo, and UPI QR. Designs persist per vendor through `GET/PUT /api/business-card`.
 
 The live canvas is also the export renderer. **JPG** generates a high-quality `1050×600` landscape or `700×1050` portrait file. **Share** uses the browser's native file-sharing sheet where supported (especially mobile); unsupported browsers automatically download the JPG instead. Profile fields and account email remain sourced from the canonical Business Profile/account data, so profile edits appear on the next card render.
+
+## Unique vendor usernames and read-only search
+
+Each Business Profile has a required public username using 3–30 lowercase letters, numbers, dots, or underscores. Uniqueness is enforced case-insensitively in both the API and database (`vendors.username` with a unique index), so duplicate usernames cannot be created even by concurrent requests.
+
+Signed-in vendors can open `/dashboard/vendors` and search by username or business name. Search excludes the current vendor. `/api/vendors/search?q=...` returns public summaries, while `/api/vendors/:username` returns only the active vendor's public business fields, available products, gallery, generated marketing previews, and visibility-controlled business-card configuration. The view has no editing actions and never returns sessions, settings, transactions, analytics, notifications, login email, upload metadata, password/provider data, or private user records.

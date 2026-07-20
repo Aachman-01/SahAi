@@ -10,7 +10,7 @@
 
 const VENDORS = [
   {
-    id: 'v1', name: '', owner: '', phone: '',
+    id: 'v1', username: '', name: '', owner: '', phone: '',
     upiId: '', category: '', location: '',
     hours: '', rating: 0, joinedAt: '', status: 'active',
     description: '',

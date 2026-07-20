@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, User, Package, QrCode, Globe, Megaphone,
-  CreditCard, Landmark, BarChart3, Settings, Bell, LogOut, Zap, X,
+  CreditCard, Search, Landmark, BarChart3, Settings, Bell, LogOut, Zap, X,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/hooks/useApi';
@@ -15,6 +15,7 @@ const items = [
   { to: '/dashboard/website', label: 'Website Builder', icon: Globe },
   { to: '/dashboard/marketing', label: 'Marketing', icon: Megaphone },
   { to: '/dashboard/business-card', label: 'Business Card', icon: CreditCard },
+  { to: '/dashboard/vendors', label: 'Vendor Search', icon: Search },
   { to: '/dashboard/schemes', label: 'Govt Schemes', icon: Landmark },
   { to: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/dashboard/settings', label: 'Settings', icon: Settings },

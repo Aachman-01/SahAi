@@ -11,6 +11,7 @@ export interface User {
 
 export interface Vendor {
   id: string;
+  username: string;
   name: string;
   owner: string;
   phone: string;

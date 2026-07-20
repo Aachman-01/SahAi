@@ -25,12 +25,13 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     '/dashboard/website': 'Website Builder',
     '/dashboard/marketing': 'Marketing Kit',
     '/dashboard/business-card': 'Business Card',
+    '/dashboard/vendors': 'Vendor Search',
     '/dashboard/schemes': 'Government Schemes',
     '/dashboard/analytics': 'Analytics',
     '/dashboard/settings': 'Settings',
     '/dashboard/notifications': 'Notifications',
   };
-  const title = titleMap[loc.pathname] ?? 'Dashboard';
+  const title = loc.pathname.startsWith('/dashboard/vendors/') ? 'Vendor Profile' : (titleMap[loc.pathname] ?? 'Dashboard');
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">

@@ -3,7 +3,7 @@ import { Card, Badge } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
 import { ImageUploader } from '@/components/ui/ImageUploader';
-import { User, Phone, MapPin, Clock, Tag, CreditCard, Save, Star, Images, AlertTriangle } from 'lucide-react';
+import { User, Phone, MapPin, Clock, Tag, CreditCard, Save, Star, Images, AlertTriangle, AtSign } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import {
   useProfile,
@@ -33,15 +33,15 @@ export default function ProfilePage() {
   const deleteGalleryImage = useDeleteGalleryImage();
 
   const [form, setForm] = useState({
-    name: '', owner: '', phone: '', upiId: '', location: '', hours: '', category: '', description: '',
+    username: '', name: '', owner: '', phone: '', upiId: '', location: '', hours: '', category: '', description: '',
   });
-  const [errors, setErrors] = useState<BusinessFieldErrors>({});
+  const [errors, setErrors] = useState<BusinessFieldErrors & { username?: string }>({});
   const [conflictWarning, setConflictWarning] = useState('');
 
   useEffect(() => {
     if (vendor) {
       setForm({
-        name: vendor.name, owner: vendor.owner, phone: vendor.phone, upiId: vendor.upiId,
+        username: vendor.username || '', name: vendor.name, owner: vendor.owner, phone: vendor.phone, upiId: vendor.upiId,
         location: vendor.location, hours: vendor.hours, category: vendor.category,
         description: vendor.description || '',
       });
@@ -70,8 +70,11 @@ export default function ProfilePage() {
   const saving = updateProfile.isPending || updateBusinessProfile.isPending;
 
   const save = async () => {
-    // Validate the shared fields client-side first.
-    const errs = validateBusinessProfile({ businessName: form.name, phone: form.phone, upiId: form.upiId });
+    // Validate username and shared fields before making either request.
+    const errs: BusinessFieldErrors & { username?: string } = validateBusinessProfile({ businessName: form.name, phone: form.phone, upiId: form.upiId });
+    if (!/^[a-z0-9][a-z0-9._]{2,29}$/.test(form.username)) {
+      errs.username = 'Use 3–30 lowercase letters, numbers, dots or underscores';
+    }
     if (Object.keys(errs).length) {
       setErrors(errs);
       toast.error('Please fix the highlighted fields');
@@ -79,8 +82,12 @@ export default function ProfilePage() {
     }
     setErrors({});
     try {
-      // Shared fields go through the single source-of-truth endpoint so the
-      // QR Payment page reflects the change automatically.
+      // Save username first so a uniqueness conflict cannot partially update
+      // the shared Business Profile / QR fields.
+      await updateProfile.mutateAsync({
+        username: form.username, owner: form.owner, location: form.location, hours: form.hours,
+        category: form.category, description: form.description,
+      });
       const saved = await updateBusinessProfile.mutateAsync({
         businessName: form.name,
         phone: form.phone,
@@ -92,14 +99,9 @@ export default function ProfilePage() {
       } else {
         setConflictWarning('');
       }
-      // Profile-only fields are saved separately.
-      await updateProfile.mutateAsync({
-        owner: form.owner, location: form.location, hours: form.hours,
-        category: form.category, description: form.description,
-      });
       toast.success('Profile saved!');
     } catch (err: any) {
-      const fields = err?.response?.data?.fields as BusinessFieldErrors | undefined;
+      const fields = err?.response?.data?.fields as (BusinessFieldErrors & { username?: string }) | undefined;
       if (fields) setErrors(fields);
       toast.error(err?.response?.data?.error || 'Could not save profile');
     }
@@ -183,6 +185,22 @@ export default function ProfilePage() {
       <Card className="p-6">
         <h3 className="font-bold mb-4">Business Details</h3>
         <div className="grid sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2">
+            <Input
+              label="Username"
+              value={form.username}
+              onChange={(event) => {
+                setForm((current) => ({ ...current, username: event.target.value.toLowerCase().replace(/\s+/g, '') }));
+                setErrors((current) => current.username ? { ...current, username: undefined } : current);
+              }}
+              icon={<AtSign className="h-4 w-4" />}
+              error={errors.username}
+              maxLength={30}
+              placeholder="your.business"
+              autoComplete="off"
+            />
+            <p className="mt-1.5 text-xs text-gray-500">Unique public username used by other vendors to find your read-only profile.</p>
+          </div>
           <Input label="Business Name" value={form.name} onChange={set('name')} icon={<User className="h-4 w-4" />} error={errors.businessName} />
           <Input label="Owner Name" value={form.owner} onChange={set('owner')} icon={<User className="h-4 w-4" />} />
           <Input label="Phone Number" value={form.phone} onChange={set('phone')} icon={<Phone className="h-4 w-4" />} error={errors.phone} />
