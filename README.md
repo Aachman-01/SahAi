@@ -161,3 +161,15 @@ SUPABASE_ANON_KEY=your_publishable_or_anon_key
 Never use `SUPABASE_SERVICE_ROLE_KEY` in the frontend. The Google Client Secret stays only inside Supabase's provider configuration. The login request includes `prompt=select_account`, so Google displays the account chooser even when a Google session already exists.
 
 Guest login uses `/api/auth/guest` and creates a separate guest user/vendor workspace. It does not re-enable shared demo-role authentication.
+
+## Permanent account deletion
+
+Settings → Delete Account calls the authenticated `DELETE /api/account` endpoint. It deletes owned Cloudinary/local uploads first, then removes sessions, notifications, bookmarks, user settings, vendor QR/website/SEO records, gallery, products, transactions, reviews, vendor profile, and finally the `users` row containing the email. Guest and password accounts need no additional provider cleanup.
+
+Google users are tracked by Supabase Auth user ID in `users.authProviderId`. Add this backend-only Render variable so the API can also delete the corresponding Supabase Auth identity:
+
+```env
+SUPABASE_SERVICE_ROLE_KEY=your_legacy_service_role_key
+```
+
+Obtain it from Supabase Project Settings → API Keys. Never expose this key in the frontend, never prefix it with `VITE_`, and never commit it. The backend refuses to delete a linked Google account if provider deletion cannot be completed, preventing an apparently deleted account from being recreated silently on the next Google login. Administrator accounts cannot be deleted from the user Settings page.

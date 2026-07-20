@@ -179,6 +179,31 @@ async function verifySupabaseAccessToken(accessToken) {
   return response.json();
 }
 
+
+async function deleteSupabaseAuthIdentity(authProviderId) {
+  if (!authProviderId) return;
+  const supabaseUrl = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  if (!supabaseUrl || !serviceRoleKey) {
+    const error = new Error('Google account deletion requires SUPABASE_SERVICE_ROLE_KEY on the backend');
+    error.statusCode = 503;
+    throw error;
+  }
+  const response = await fetch(`${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(authProviderId)}`, {
+    method: 'DELETE',
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+    },
+  });
+  if (!response.ok && response.status !== 404) {
+    const detail = await response.text().catch(() => '');
+    const error = new Error(`Could not delete Google identity${detail ? `: ${detail}` : ''}`);
+    error.statusCode = 502;
+    throw error;
+  }
+}
+
 // Sign up: creates a real user row with a hashed password.
 route('POST', '/api/auth/signup', async (req, res, _p, body) => {
   const name = (body.name || '').trim();
@@ -238,13 +263,13 @@ route('POST', '/api/auth/google', async (req, res, _p, body) => {
   if (!user) {
     const userId = uid('u');
     const vendorId = await createVendorRecord(googleName, '');
-    await db.prepare('INSERT INTO users (id,name,phone,email,role,avatar,vendorId,passwordHash,passwordSalt) VALUES (?,?,?,?,?,?,?,?,?)')
-      .run(userId, googleName, '', email, 'vendor', googleAvatar, vendorId, null, null);
+    await db.prepare('INSERT INTO users (id,name,phone,email,role,avatar,vendorId,passwordHash,passwordSalt,authProviderId) VALUES (?,?,?,?,?,?,?,?,?,?)')
+      .run(userId, googleName, '', email, 'vendor', googleAvatar, vendorId, null, null, authUser.id);
     user = await db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
   } else {
     const nextName = user.name || googleName;
     const nextAvatar = googleAvatar || user.avatar || null;
-    await db.prepare('UPDATE users SET name=?, avatar=? WHERE id=?').run(nextName, nextAvatar, user.id);
+    await db.prepare('UPDATE users SET name=?, avatar=?, authProviderId=? WHERE id=?').run(nextName, nextAvatar, authUser.id, user.id);
     user = await db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
   }
 
@@ -305,6 +330,58 @@ route('POST', '/api/auth/logout', async (req, res) => {
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   if (token) await db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
   send(res, 200, { ok: true });
+});
+
+// Permanently delete the authenticated account and all owned data.
+route('DELETE', '/api/account', async (_req, res, _p, body, user) => {
+  if (!body || body.confirm !== 'DELETE') {
+    return send(res, 400, { error: 'Type DELETE to confirm permanent account deletion' });
+  }
+  if (user.role === 'admin') {
+    return send(res, 403, { error: 'Administrator accounts cannot be deleted from Settings' });
+  }
+
+  const userId = user.id;
+  const vendorId = user.vendorId || null;
+
+  // Delete every tracked upload first. If cloud deletion fails, keep the account
+  // so the user can retry instead of leaving inaccessible orphaned assets.
+  const uploads = await db.prepare('SELECT * FROM uploaded_files WHERE ownerId = ?').all(userId);
+  for (const upload of uploads) {
+    const deleted = await deleteUploadIfOwned(upload.relPath, userId);
+    if (!deleted && upload.storageProvider === 'cloudinary') {
+      return send(res, 502, { error: 'Could not delete all Cloudinary assets. Account deletion was stopped; please retry.' });
+    }
+  }
+
+  // Delete the linked Supabase Google identity before removing the local row.
+  // Password and guest users have no authProviderId and skip this operation.
+  try {
+    await deleteSupabaseAuthIdentity(user.authProviderId);
+  } catch (error) {
+    return send(res, error.statusCode || 502, { error: error.message || 'Could not delete Google identity' });
+  }
+
+  // Delete user-scoped records.
+  await db.prepare('DELETE FROM sessions WHERE userId = ?').run(userId);
+  await db.prepare('DELETE FROM notifications WHERE userId = ?').run(userId);
+  await db.prepare('DELETE FROM scheme_bookmarks WHERE userId = ?').run(userId);
+  await db.prepare('DELETE FROM kv WHERE scope = ?').run('user:' + userId);
+  await db.prepare('DELETE FROM uploaded_files WHERE ownerId = ?').run(userId);
+
+  // Delete the complete vendor workspace owned by this account.
+  if (vendorId) {
+    await db.prepare('DELETE FROM gallery_images WHERE vendorId = ?').run(vendorId);
+    await db.prepare('DELETE FROM products WHERE vendorId = ?').run(vendorId);
+    await db.prepare('DELETE FROM transactions WHERE vendorId = ?').run(vendorId);
+    await db.prepare('DELETE FROM reviews WHERE vendorId = ?').run(vendorId);
+    await db.prepare('DELETE FROM kv WHERE scope = ?').run('vendor:' + vendorId);
+    await db.prepare('DELETE FROM vendors WHERE id = ?').run(vendorId);
+  }
+
+  // Delete last so the email is no longer present in the users table.
+  await db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+  send(res, 200, { ok: true, deletedUserId: userId });
 });
 
 // --- Uploads ---

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { User, Role } from '@/types';
-import { post, get, tokenStore } from '@/lib/api';
+import { post, get, del, tokenStore } from '@/lib/api';
 import { getSupabaseClient, hasSupabaseConfig } from '@/lib/supabase';
 
 interface LoginArgs { role?: Role; name?: string; phone?: string; otp?: string; email?: string; password?: string }
@@ -16,6 +16,7 @@ interface AuthCtx {
   loginWithGoogle: () => Promise<void>;
   completeGoogleLogin: (accessToken: string) => Promise<User>;
   loginAsGuest: () => Promise<User>;
+  deleteAccount: () => Promise<void>;
   logout: () => void;
 }
 const Ctx = createContext<AuthCtx | undefined>(undefined);
@@ -80,6 +81,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return u;
   };
 
+  const deleteAccount = async () => {
+    await del('/api/account', { confirm: 'DELETE' });
+    tokenStore.clear();
+    setUser(null);
+    if (hasSupabaseConfig()) await getSupabaseClient().auth.signOut().catch(() => {});
+  };
+
   const logout = () => {
     post('/api/auth/logout').catch(() => {});
     tokenStore.clear();
@@ -88,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <Ctx.Provider value={{ user, loading, login, loginWith, signup, sendOtp, loginWithGoogle, completeGoogleLogin, loginAsGuest, logout }}>
+    <Ctx.Provider value={{ user, loading, login, loginWith, signup, sendOtp, loginWithGoogle, completeGoogleLogin, loginAsGuest, deleteAccount, logout }}>
       {children}
     </Ctx.Provider>
   );

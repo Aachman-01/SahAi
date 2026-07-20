@@ -3,7 +3,7 @@
 CREATE TABLE IF NOT EXISTS users (
   id text PRIMARY KEY, name text, phone text, email text UNIQUE,
   role text, avatar text, vendorid text,
-  passwordhash text, passwordsalt text
+  passwordhash text, passwordsalt text, authproviderid text
 );
 CREATE TABLE IF NOT EXISTS sessions (
   token text PRIMARY KEY, userid text NOT NULL, createdat text NOT NULL
@@ -54,6 +54,8 @@ CREATE TABLE IF NOT EXISTS uploaded_files (
   sizebytes integer, createdat text, storageprovider text DEFAULT 'local',
   publicid text
 );
+ALTER TABLE users ADD COLUMN IF NOT EXISTS authproviderid text;
+CREATE INDEX IF NOT EXISTS idx_users_authproviderid ON users(authproviderid);
 CREATE INDEX IF NOT EXISTS idx_sessions_userid ON sessions(userid);
 CREATE INDEX IF NOT EXISTS idx_products_vendorid ON products(vendorid);
 CREATE INDEX IF NOT EXISTS idx_transactions_vendorid ON transactions(vendorid);

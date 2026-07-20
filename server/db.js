@@ -16,6 +16,7 @@ const columnNames = {
   schemeid: 'schemeId', sortorder: 'sortOrder', sizebytes: 'sizeBytes',
   storageprovider: 'storageProvider', publicid: 'publicId', relpath: 'relPath',
   ownerid: 'ownerId', passwordhash: 'passwordHash', passwordsalt: 'passwordSalt',
+  authproviderid: 'authProviderId',
 };
 function normalizeRow(row) {
   if (!row) return row;
@@ -84,7 +85,7 @@ async function initializeSchema() {
     return;
   }
   await db.exec(`
-    CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, name TEXT, phone TEXT, email TEXT UNIQUE, role TEXT, avatar TEXT, vendorId TEXT, passwordHash TEXT, passwordSalt TEXT);
+    CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, name TEXT, phone TEXT, email TEXT UNIQUE, role TEXT, avatar TEXT, vendorId TEXT, passwordHash TEXT, passwordSalt TEXT, authProviderId TEXT);
     CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, userId TEXT, createdAt TEXT);
     CREATE TABLE IF NOT EXISTS vendors (id TEXT PRIMARY KEY, name TEXT, owner TEXT, phone TEXT, upiId TEXT, category TEXT, location TEXT, hours TEXT, logo TEXT, photo TEXT, rating REAL, joinedAt TEXT, status TEXT, description TEXT);
     CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, vendorId TEXT, name TEXT, category TEXT, price REAL, offerPrice REAL, stock INTEGER, available INTEGER, description TEXT, image TEXT, popular INTEGER, discount REAL, createdAt TEXT);
@@ -101,6 +102,7 @@ async function initializeSchema() {
   const userCols = (await db.prepare('PRAGMA table_info(users)').all()).map((c) => c.name);
   if (!userCols.includes('passwordHash')) await db.exec('ALTER TABLE users ADD COLUMN passwordHash TEXT;');
   if (!userCols.includes('passwordSalt')) await db.exec('ALTER TABLE users ADD COLUMN passwordSalt TEXT;');
+  if (!userCols.includes('authProviderId')) await db.exec('ALTER TABLE users ADD COLUMN authProviderId TEXT;');
   const uploadCols = (await db.prepare('PRAGMA table_info(uploaded_files)').all()).map((c) => c.name);
   if (!uploadCols.includes('storageProvider')) await db.exec("ALTER TABLE uploaded_files ADD COLUMN storageProvider TEXT DEFAULT 'local';");
   if (!uploadCols.includes('publicId')) await db.exec('ALTER TABLE uploaded_files ADD COLUMN publicId TEXT;');

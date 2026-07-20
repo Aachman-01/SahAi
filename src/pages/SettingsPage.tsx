@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Moon, Sun, Bell, Globe, Lock, CreditCard, Database, Save, Trash2 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -10,6 +12,7 @@ import { useSettings, useUpdateSettings, useBusinessProfile, useUpdateBusinessPr
 import { validateBusinessProfile, formatBusinessUpdatedAt, type BusinessFieldErrors } from '@/utils/validation';
 import type { NotificationPrefs } from '@/types';
 import toast from 'react-hot-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const NOTIF_ROWS: [keyof NotificationPrefs, string, string][] = [
   ['payments', 'Payment Alerts', 'Get notified on every UPI payment'],
@@ -25,12 +28,16 @@ export default function SettingsPage() {
   const { data: businessProfile } = useBusinessProfile();
   const updateSettings = useUpdateSettings();
   const updateBusinessProfile = useUpdateBusinessProfile();
+  const { deleteAccount } = useAuth();
+  const navigate = useNavigate();
 
   const [notif, setNotif] = useState<NotificationPrefs>({ payments: true, reviews: true, schemes: false, marketing: true });
   const [upiId, setUpiId] = useState('');
   const [linkedBank, setLinkedBank] = useState('');
   const [errors, setErrors] = useState<BusinessFieldErrors>({});
   const [conflictWarning, setConflictWarning] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -80,6 +87,20 @@ export default function SettingsPage() {
       const fields = err?.response?.data?.fields as BusinessFieldErrors | undefined;
       if (fields) setErrors(fields);
       toast.error(err?.response?.data?.error || 'Could not save settings');
+    }
+  };
+
+  const permanentlyDeleteAccount = async () => {
+    try {
+      setDeleting(true);
+      await deleteAccount();
+      toast.success('Your account and associated data were permanently deleted');
+      navigate('/', { replace: true });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || 'Could not delete account');
+    } finally {
+      setDeleting(false);
+      setDeleteOpen(false);
     }
   };
 
@@ -180,13 +201,24 @@ export default function SettingsPage() {
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => toast.success('Backup downloaded')}><Database className="h-4 w-4" /> Download Backup</Button>
           <Button variant="outline" onClick={() => toast.success('Restoring...')}><Save className="h-4 w-4" /> Restore</Button>
-          <Button variant="danger" onClick={() => toast.error('Confirm in production')}><Trash2 className="h-4 w-4" /> Delete Account</Button>
+          <Button variant="danger" onClick={() => setDeleteOpen(true)} disabled={deleting}><Trash2 className="h-4 w-4" /> Delete Account</Button>
         </div>
       </Card>
 
       <div className="flex justify-end">
-        <Button onClick={saveAll} disabled={saving}><Save className="h-4 w-4" /> {saving ? 'Saving...' : 'Save All Changes'}</Button>
+        <Button onClick={saveAll} disabled={saving || deleting}><Save className="h-4 w-4" /> {saving ? 'Saving...' : 'Save All Changes'}</Button>
       </div>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onClose={() => !deleting && setDeleteOpen(false)}
+        onConfirm={permanentlyDeleteAccount}
+        title="Permanently delete account?"
+        message="This permanently deletes your email, business profile, products, transactions, reviews, settings, website data, notifications, gallery, uploaded Cloudinary images, and login sessions. This cannot be undone."
+        confirmLabel="Delete account permanently"
+        loading={deleting}
+        tone="danger"
+      />
     </div>
   );
 }
