@@ -1,0 +1,3 @@
+# React Router SPA fallback for Cloudflare Pages.
+# Existing static files (including hashed /assets/* files) are served first.
+/* /index.html 200
