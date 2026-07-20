@@ -24,7 +24,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     '/dashboard/qr': 'QR Payment',
     '/dashboard/website': 'Website Builder',
     '/dashboard/marketing': 'Marketing Kit',
-    '/dashboard/seo': 'Local SEO',
+    '/dashboard/business-card': 'Business Card',
     '/dashboard/schemes': 'Government Schemes',
     '/dashboard/analytics': 'Analytics',
     '/dashboard/settings': 'Settings',

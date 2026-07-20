@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, post, put, patch, del } from '@/lib/api';
 import type {
   Product, Transaction, Scheme, Review, Vendor, Settings, QrConfig,
-  WebsiteConfig, Analytics, SeoData, DashboardData, Notification,
+  WebsiteConfig, Analytics, BusinessCardConfig, DashboardData, Notification,
   AdminStats, Report, MarketingMaterial,
 } from '@/types';
 
@@ -184,15 +184,15 @@ export const useUpdateWebsite = () => {
   });
 };
 
-/* ---------------- SEO ---------------- */
-export const useSeo = () =>
-  useQuery({ queryKey: ['seo'], queryFn: () => get<SeoData>('/api/seo') });
+/* ---------------- Business Card ---------------- */
+export const useBusinessCard = () =>
+  useQuery({ queryKey: ['business-card'], queryFn: () => get<BusinessCardConfig>('/api/business-card') });
 
-export const useUpdateSeo = () => {
+export const useUpdateBusinessCard = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (patch: Partial<SeoData>) => put<SeoData>('/api/seo', patch),
-    onSuccess: (data) => qc.setQueryData(['seo'], data),
+    mutationFn: (config: BusinessCardConfig) => put<BusinessCardConfig>('/api/business-card', config),
+    onSuccess: (data) => qc.setQueryData(['business-card'], data),
   });
 };
 

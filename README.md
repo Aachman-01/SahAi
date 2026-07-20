@@ -1,6 +1,6 @@
 # SahAI — Street Vendor Digitalization Agent
 
-A full-stack app: **Vite + React + TypeScript** frontend with a Node.js API, **Supabase PostgreSQL in production**, and a built-in SQLite fallback for local development. All data is served from and persisted to the backend — there is **no hardcoded/mock data** in the UI. Every change you save (profile, products, QR settings, website template, SEO checklist, notifications, admin actions, etc.) is written to the database and instantly synced across every page (including the public customer website).
+A full-stack app: **Vite + React + TypeScript** frontend with a Node.js API, **Supabase PostgreSQL in production**, and a built-in SQLite fallback for local development. All data is served from and persisted to the backend — there is **no hardcoded/mock data** in the UI. Every change you save (profile, products, QR settings, website template, business card design, notifications, admin actions, etc.) is written to the database and instantly synced across every page (including the public customer website).
 
 ## Requirements
 
@@ -80,7 +80,7 @@ Copy `.env.example` to `.env` if it is missing.
 
 - `src/lib/api.ts` — axios client; stores the session token in `localStorage` (`sahai_token`) and sends it as `Authorization: Bearer <token>`.
 - `src/hooks/useApi.ts` — React Query hooks for every resource. Mutations invalidate/refresh the relevant queries so the UI re-syncs immediately after a save.
-- `server/server.js` — REST API (auth, profile, products, transactions, schemes, reviews, analytics, dashboard, settings, QR, website, SEO, marketing, notifications, admin, and a public vendor endpoint).
+- `server/server.js` — REST API (auth, profile, products, transactions, schemes, reviews, analytics, dashboard, settings, QR, website, business card, marketing, notifications, admin, and a public vendor endpoint).
 - `server/db.js` — asynchronous Supabase PostgreSQL adapter with SQLite development fallback.
 - `server/supabase/schema.sql` — idempotent Supabase schema and Row Level Security setup.
 - `server/seed-data.js` — the initial seed content (used only to populate an empty database).
@@ -101,7 +101,7 @@ All endpoints are under `http://localhost:4000`. Authenticated endpoints require
 | Settings | `GET/PUT /api/settings` |
 | QR | `GET/PUT /api/qr` |
 | Website | `GET/PUT /api/website` |
-| SEO | `GET/PUT /api/seo` |
+| Business Card | `GET/PUT /api/business-card` |
 | Marketing | `GET /api/marketing` |
 | Notifications | `GET/POST /api/notifications`, `PUT /api/notifications/:id`, `POST /api/notifications/read-all`, `DELETE /api/notifications/:id` |
 | Admin | `GET /api/admin/vendors`, `PUT /api/admin/vendors/:id`, `GET /api/admin/stats`, `GET /api/admin/schemes`, `GET /api/admin/reports` |
@@ -164,7 +164,7 @@ Guest login uses `/api/auth/guest` and creates a separate guest user/vendor work
 
 ## Permanent account deletion
 
-Settings → Delete Account calls the authenticated `DELETE /api/account` endpoint. It deletes owned Cloudinary/local uploads first, then removes sessions, notifications, bookmarks, user settings, vendor QR/website/SEO records, gallery, products, transactions, reviews, vendor profile, and finally the `users` row containing the email. Guest and password accounts need no additional provider cleanup.
+Settings → Delete Account calls the authenticated `DELETE /api/account` endpoint. It deletes owned Cloudinary/local uploads first, then removes sessions, notifications, bookmarks, user settings, vendor QR/website/business-card records, gallery, products, transactions, reviews, vendor profile, and finally the `users` row containing the email. Guest and password accounts need no additional provider cleanup.
 
 Google users are tracked by Supabase Auth user ID in `users.authProviderId`. Add this backend-only Render variable so the API can also delete the corresponding Supabase Auth identity:
 
@@ -173,3 +173,9 @@ SUPABASE_SERVICE_ROLE_KEY=your_legacy_service_role_key
 ```
 
 Obtain it from Supabase Project Settings → API Keys. Never expose this key in the frontend, never prefix it with `VITE_`, and never commit it. The backend refuses to delete a linked Google account if provider deletion cannot be completed, preventing an apparently deleted account from being recreated silently on the next Google login. Administrator accounts cannot be deleted from the user Settings page.
+
+## Business Card designer
+
+Local SEO has been fully removed and replaced with a profile-powered Business Card section at `/dashboard/business-card`. Each vendor can choose modern/classic/minimal templates, portrait or landscape layout, preset/custom colors, typography, tagline, profile field visibility, photo, and UPI QR. Designs persist per vendor through `GET/PUT /api/business-card`.
+
+The live canvas is also the export renderer. **JPG** generates a high-quality `1050×600` landscape or `700×1050` portrait file. **Share** uses the browser's native file-sharing sheet where supported (especially mobile); unsupported browsers automatically download the JPG instead. Profile fields and account email remain sourced from the canonical Business Profile/account data, so profile edits appear on the next card render.

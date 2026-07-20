@@ -146,7 +146,7 @@ async function seedIfEmpty() {
   const starter=[918643,2872755,533280,1638280];
   for (let i=0;i<starter.length;i++) { const id=starter[i]; await db.prepare('INSERT INTO gallery_images (id,vendorId,url,caption,sortOrder,createdAt) VALUES (?,?,?,?,?,?) ON CONFLICT DO NOTHING').run(`g_${id}`,'v1','https:'+'//images.pexels.com/photos/'+id+'/pexels-photo-'+id+'.jpeg?auto=compress&w=800','',i,now); }
   await kvSet('vendor:v1','analytics',seed.ANALYTICS);
-  await kvSet('vendor:v1','seo',seed.SEO);
+  await kvSet('vendor:v1','businessCard',seed.BUSINESS_CARD);
   await kvSet('vendor:v1','website',seed.WEBSITE);
   await kvSet('vendor:v1','qr',seed.QR);
   await kvSet('user:u_vendor','settings',seed.SETTINGS);
@@ -174,6 +174,8 @@ async function ensureConfiguredAdmin() {
 const ready = (async () => {
   await initializeSchema();
   await seedIfEmpty();
+  // Local SEO was retired in favor of Business Card. Remove obsolete KV data.
+  await db.prepare('DELETE FROM kv WHERE key = ?').run('seo');
   await ensureConfiguredAdmin();
 })();
 module.exports = { db, kvGet, kvSet, seed, hashPassword, verifyPassword, ready, provider };

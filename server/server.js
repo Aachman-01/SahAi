@@ -747,13 +747,37 @@ route('PUT', '/api/website', async (req, res, _p, body, user) => {
   send(res, 200, await kvSet(scope, 'website', { ...await kvGet(scope, 'website', seed.WEBSITE), ...body }));
 });
 
-// --- SEO ---
-route('GET', '/api/seo', async (req, res, _p, _b, user) => {
-  send(res, 200, await kvGet('vendor:' + currentVendorId(user), 'seo', seed.SEO));
+// --- Business Card ---
+route('GET', '/api/business-card', async (req, res, _p, _b, user) => {
+  send(res, 200, await kvGet('vendor:' + currentVendorId(user), 'businessCard', seed.BUSINESS_CARD));
 });
-route('PUT', '/api/seo', async (req, res, _p, body, user) => {
-  const scope = 'vendor:' + currentVendorId(user);
-  send(res, 200, await kvSet(scope, 'seo', { ...await kvGet(scope, 'seo', seed.SEO), ...body }));
+route('PUT', '/api/business-card', async (req, res, _p, body, user) => {
+  const allowedTemplates = new Set(['modern', 'classic', 'minimal']);
+  const allowedOrientations = new Set(['landscape', 'portrait']);
+  const allowedFonts = new Set(['sans', 'serif', 'mono']);
+  const isColor = (value) => typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
+  const current = await kvGet('vendor:' + currentVendorId(user), 'businessCard', seed.BUSINESS_CARD);
+  const next = {
+    ...current,
+    template: allowedTemplates.has(body.template) ? body.template : current.template,
+    orientation: allowedOrientations.has(body.orientation) ? body.orientation : current.orientation,
+    backgroundColor: isColor(body.backgroundColor) ? body.backgroundColor : current.backgroundColor,
+    accentColor: isColor(body.accentColor) ? body.accentColor : current.accentColor,
+    textColor: isColor(body.textColor) ? body.textColor : current.textColor,
+    fontFamily: allowedFonts.has(body.fontFamily) ? body.fontFamily : current.fontFamily,
+    tagline: typeof body.tagline === 'string' ? body.tagline.trim().slice(0, 80) : current.tagline,
+    showPhoto: body.showPhoto === undefined ? current.showPhoto : Boolean(body.showPhoto),
+    showPhone: body.showPhone === undefined ? current.showPhone : Boolean(body.showPhone),
+    showEmail: body.showEmail === undefined ? current.showEmail : Boolean(body.showEmail),
+    showUpi: body.showUpi === undefined ? current.showUpi : Boolean(body.showUpi),
+    showLocation: body.showLocation === undefined ? current.showLocation : Boolean(body.showLocation),
+    showHours: body.showHours === undefined ? current.showHours : Boolean(body.showHours),
+    showDescription: body.showDescription === undefined ? current.showDescription : Boolean(body.showDescription),
+    showQr: body.showQr === undefined ? current.showQr : Boolean(body.showQr),
+    updatedAt: new Date().toISOString(),
+  };
+  await kvSet('vendor:' + currentVendorId(user), 'businessCard', next);
+  send(res, 200, next);
 });
 
 // --- Marketing ---

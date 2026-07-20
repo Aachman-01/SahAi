@@ -40,20 +40,22 @@ const ANALYTICS = {
 
 const NOTIFICATIONS = [];
 
-const SEO = {
-  checklist: [
-    { id: 'c1', label: 'Claim your Google Business Profile', done: false },
-    { id: 'c2', label: 'Add accurate business hours', done: false },
-    { id: 'c3', label: 'Upload at least 5 photos', done: false },
-    { id: 'c4', label: 'Add products to Google catalog', done: false },
-    { id: 'c5', label: 'Get 10 customer reviews', done: false },
-    { id: 'c6', label: 'Add website link to profile', done: false },
-    { id: 'c7', label: 'Respond to all reviews', done: false },
-    { id: 'c8', label: 'Enable messaging on Google', done: false },
-  ],
-  keywords: [],
-  suggestions: [],
-  stats: [],
+const BUSINESS_CARD = {
+  template: 'modern',
+  orientation: 'landscape',
+  backgroundColor: '#0f172a',
+  accentColor: '#22c55e',
+  textColor: '#ffffff',
+  fontFamily: 'sans',
+  tagline: 'Professional service you can trust',
+  showPhoto: true,
+  showPhone: true,
+  showEmail: true,
+  showUpi: true,
+  showLocation: true,
+  showHours: true,
+  showDescription: false,
+  showQr: true,
 };
 
 const WEBSITE = { template: 'food', published: false, slug: '' };
@@ -89,5 +91,5 @@ const USERS = [
 
 module.exports = {
   VENDORS, PRODUCTS, TRANSACTIONS, SCHEMES, REVIEWS, ANALYTICS,
-  NOTIFICATIONS, SEO, WEBSITE, QR, SETTINGS, REPORTS, MARKETING, USERS,
+  NOTIFICATIONS, BUSINESS_CARD, WEBSITE, QR, SETTINGS, REPORTS, MARKETING, USERS,
 };

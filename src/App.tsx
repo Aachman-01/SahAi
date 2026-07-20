@@ -16,7 +16,7 @@ import ProductsPage from '@/pages/ProductsPage';
 import QrPaymentPage from '@/pages/QrPaymentPage';
 import WebsiteBuilderPage from '@/pages/WebsiteBuilderPage';
 import MarketingPage from '@/pages/MarketingPage';
-import SeoPage from '@/pages/SeoPage';
+import BusinessCardPage from '@/pages/BusinessCardPage';
 import SchemesPage from '@/pages/SchemesPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
 import SettingsPage from '@/pages/SettingsPage';
@@ -47,7 +47,7 @@ function AnimatedRoutes() {
         <Route path="/dashboard/qr" element={<DashboardLayout><QrPaymentPage /></DashboardLayout>} />
         <Route path="/dashboard/website" element={<DashboardLayout><WebsiteBuilderPage /></DashboardLayout>} />
         <Route path="/dashboard/marketing" element={<DashboardLayout><MarketingPage /></DashboardLayout>} />
-        <Route path="/dashboard/seo" element={<DashboardLayout><SeoPage /></DashboardLayout>} />
+        <Route path="/dashboard/business-card" element={<DashboardLayout><BusinessCardPage /></DashboardLayout>} />
         <Route path="/dashboard/schemes" element={<DashboardLayout><SchemesPage /></DashboardLayout>} />
         <Route path="/dashboard/analytics" element={<DashboardLayout><AnalyticsPage /></DashboardLayout>} />
         <Route path="/dashboard/settings" element={<DashboardLayout><SettingsPage /></DashboardLayout>} />

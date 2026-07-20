@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Download, Printer, CreditCard, Image as ImageIcon, Moon, Sun,
@@ -17,6 +18,7 @@ import toast from 'react-hot-toast';
 const COLORS = ['#16A34A', '#2563EB', '#F59E0B', '#dc2626', '#7c3aed', '#0891b2'];
 
 export default function QrPaymentPage() {
+  const navigate = useNavigate();
   const { theme, toggle } = useTheme();
   const { data: qr } = useQr();
   const { data: businessProfile } = useBusinessProfile();
@@ -142,7 +144,7 @@ export default function QrPaymentPage() {
                 { icon: CreditCard, label: 'Business Card' },
                 { icon: Printer, label: 'Poster' },
               ].map((s) => (
-                <button key={s.label} onClick={() => toast.success(`${s.label} preview`)} className="flex flex-col items-center gap-1.5 rounded-xl border border-gray-200 dark:border-zinc-800 p-3 hover:border-primary-400 transition-colors">
+                <button key={s.label} onClick={() => s.label === 'Business Card' ? navigate('/dashboard/business-card') : toast.success(`${s.label} preview`)} className="flex flex-col items-center gap-1.5 rounded-xl border border-gray-200 dark:border-zinc-800 p-3 hover:border-primary-400 transition-colors">
                   <s.icon className="h-5 w-5 text-primary-600" /><span className="text-xs font-medium">{s.label}</span>
                 </button>
               ))}

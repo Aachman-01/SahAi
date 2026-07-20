@@ -10,7 +10,7 @@ const COMMANDS = [
   { label: 'QR Payment', to: '/dashboard/qr' },
   { label: 'Website Builder', to: '/dashboard/website' },
   { label: 'Marketing Kit', to: '/dashboard/marketing' },
-  { label: 'Local SEO', to: '/dashboard/seo' },
+  { label: 'Business Card', to: '/dashboard/business-card' },
   { label: 'Govt Schemes', to: '/dashboard/schemes' },
   { label: 'Analytics', to: '/dashboard/analytics' },
   { label: 'Settings', to: '/dashboard/settings' },

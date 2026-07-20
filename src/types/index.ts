@@ -123,14 +123,23 @@ export interface Analytics {
   trafficSources: TrafficSource[];
 }
 
-export interface SeoChecklistItem { id: string; label: string; done: boolean; }
-export interface SeoKeyword { kw: string; rank: number; trend: 'up' | 'down'; }
-export interface SeoStat { label: string; value: string; }
-export interface SeoData {
-  checklist: SeoChecklistItem[];
-  keywords: SeoKeyword[];
-  suggestions: string[];
-  stats: SeoStat[];
+export interface BusinessCardConfig {
+  template: 'modern' | 'classic' | 'minimal';
+  orientation: 'landscape' | 'portrait';
+  backgroundColor: string;
+  accentColor: string;
+  textColor: string;
+  fontFamily: 'sans' | 'serif' | 'mono';
+  tagline: string;
+  showPhoto: boolean;
+  showPhone: boolean;
+  showEmail: boolean;
+  showUpi: boolean;
+  showLocation: boolean;
+  showHours: boolean;
+  showDescription: boolean;
+  showQr: boolean;
+  updatedAt?: string | null;
 }
 
 export interface DashboardData {
