@@ -28,6 +28,7 @@ import NotFoundPage from '@/pages/NotFoundPage';
 import MaintenancePage from '@/pages/MaintenancePage';
 
 import { Toaster } from 'react-hot-toast';
+import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -68,6 +69,7 @@ export default function App() {
   return (
     <>
       <AnimatedRoutes />
+      <PwaInstallPrompt />
       <Toaster
         position="top-right"
         toastOptions={{
