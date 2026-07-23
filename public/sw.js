@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'sahai-shell-v2';
-const ASSET_CACHE = 'sahai-assets-v2';
+const SHELL_CACHE = 'sahai-shell-v3';
+const ASSET_CACHE = 'sahai-assets-v3';
 const SHELL = ['/', '/index.html', '/offline.html', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {

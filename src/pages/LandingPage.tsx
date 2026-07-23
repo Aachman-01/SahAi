@@ -8,9 +8,11 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Card, Badge } from '@/components/ui/Card';
 import { useCountUp } from '@/hooks/useCountUp';
+import { usePwaInstall } from '@/contexts/PwaInstallContext';
+import toast from 'react-hot-toast';
 
 const features = [
-  { icon: Bot, title: 'AI Assistant', desc: 'Chat in your language to build your entire digital business in minutes.', color: 'from-primary-500 to-primary-600' },
+  { icon: Bot, title: 'AI Assistant', desc: 'Chat in English or Hindi to build your entire digital business in minutes.', color: 'from-primary-500 to-primary-600' },
   { icon: UserCircle, title: 'Business Profile', desc: 'Auto-generated profile with photos, hours, location & category.', color: 'from-secondary-500 to-secondary-600' },
   { icon: QrCode, title: 'QR Payments', desc: 'Professional UPI QR codes with your logo, ready to print & share.', color: 'from-accent-500 to-accent-600' },
   { icon: Globe, title: 'Mini Website', desc: 'A beautiful storefront at yourdomain.com/vendor/your-name.', color: 'from-primary-500 to-secondary-500' },
@@ -23,7 +25,7 @@ const stats = [
   { value: 20, suffix: 'M+', label: 'Street Vendors in India' },
   { value: 50, suffix: 'M+', label: 'Monthly UPI Payments' },
   { value: 95, suffix: '%', label: 'Smartphone Users' },
-  { value: 9, suffix: '', label: 'Languages Supported' },
+  { value: 2, suffix: '', label: 'Languages Supported' },
 ];
 
 const steps = [
@@ -41,7 +43,7 @@ const testimonials = [
 
 const faqs = [
   { q: 'Is SahAI free for street vendors?', a: 'Yes, the core features — profile, QR, website & scheme matching — are free forever for individual vendors.' },
-  { q: 'Do I need a smartphone to use it?', a: 'A basic smartphone with internet is enough. The AI works over WhatsApp-style chat in 9 Indian languages.' },
+  { q: 'Do I need a smartphone to use it?', a: 'A basic smartphone with internet is enough. The AI works over WhatsApp-style chat in English and Hindi.' },
   { q: 'How does the AI generate my business?', a: 'You chat with the AI in your language. It asks for your name, UPI, location and category, then builds everything automatically.' },
   { q: 'Can I accept UPI payments?', a: 'Yes. We generate a professional QR code with your logo that you can print as a poster or standee.' },
   { q: 'Which government schemes are covered?', a: 'PM SVANidhi, Mudra Loan, MSME Udyam, Stand-Up India, PM Vishwakarma and more — with eligibility checks.' },
@@ -58,6 +60,15 @@ function Stat({ value, suffix, label }: { value: number; suffix: string; label: 
 }
 
 export default function LandingPage() {
+  const { isMobile, isInstalled, install } = usePwaInstall();
+
+  const installApp = async () => {
+    const outcome = await install();
+    if (outcome === 'unavailable') {
+      toast('Open your browser menu and choose “Install app” or “Add to Home Screen”.');
+    }
+  };
+
   return (
     <div className="overflow-hidden">
       {/* HERO */}
@@ -75,7 +86,10 @@ export default function LandingPage() {
                 AI-powered assistant that creates your business profile, payment QR, website, marketing materials and government scheme recommendations within minutes.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/language"><Button size="lg">Get Started <ArrowRight className="h-4 w-4" /></Button></Link>
+                <Link to="/login"><Button size="lg">Get Started <ArrowRight className="h-4 w-4" /></Button></Link>
+                {isMobile && !isInstalled && (
+                  <Button variant="secondary" size="lg" onClick={installApp}><Download className="h-4 w-4" /> Install App</Button>
+                )}
                 <Button variant="outline" size="lg"><Play className="h-4 w-4" /> Watch Demo</Button>
               </div>
               <div className="mt-8 flex items-center gap-6 text-sm text-gray-500">
@@ -242,7 +256,7 @@ export default function LandingPage() {
             <div className="relative">
               <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to grow your business?</h2>
               <p className="text-white/90 max-w-xl mx-auto mb-8">Join thousands of vendors going digital with SahAI. It's free, fast, and built for you.</p>
-              <Link to="/language"><Button variant="outline" size="lg" className="bg-white text-primary-700 hover:bg-gray-50 border-0">Get Started Free <ArrowRight className="h-4 w-4" /></Button></Link>
+              <Link to="/login"><Button variant="outline" size="lg" className="bg-white text-primary-700 hover:bg-gray-50 border-0">Get Started Free <ArrowRight className="h-4 w-4" /></Button></Link>
             </div>
           </div>
         </div>

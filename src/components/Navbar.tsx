@@ -1,17 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Moon, Sun, Globe, Zap } from 'lucide-react';
+import { Menu, X, Moon, Sun, Zap } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from './ui/Button';
-import { LANGUAGES } from '@/data/languages';
 
 export function Navbar() {
   const { theme, toggle } = useTheme();
-  const { lang, setLang } = useLanguage();
   const [open, setOpen] = useState(false);
-  const [langOpen, setLangOpen] = useState(false);
   const nav = useNavigate();
 
   const links = [
@@ -41,31 +37,12 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <button onClick={() => setLangOpen((v) => !v)} className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-zinc-800">
-                <Globe className="h-5 w-5" />
-              </button>
-              <AnimatePresence>
-                {langOpen && (
-                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
-                    className="absolute right-0 mt-2 w-44 rounded-xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-float p-1.5">
-                    {LANGUAGES.map((l) => (
-                      <button key={l.code} onClick={() => { setLang(l.code); setLangOpen(false); }}
-                        className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-zinc-800 ${lang === l.code ? 'text-primary-600 font-semibold' : ''}`}>
-                        <span>{l.flag}</span> {l.native}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
             <button onClick={toggle} className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-zinc-800">
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
 
             <Button variant="ghost" size="sm" className="hidden sm:inline-flex" onClick={() => nav('/login')}>Login</Button>
-            <Button size="sm" onClick={() => nav('/language')}>Get Started</Button>
+            <Button size="sm" onClick={() => nav('/login')}>Get Started</Button>
 
             <button onClick={() => setOpen((v) => !v)} className="md:hidden rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-zinc-800">
               {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

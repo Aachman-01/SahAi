@@ -34,7 +34,9 @@ Included:
 
 - `manifest.webmanifest`
 - 192px, 512px, maskable and Apple touch icons
-- install prompt for supported browsers
+- install button in the dashboard header
+- mobile-only install button beside Get Started on the landing page
+- no floating install popup
 - standalone display metadata
 - network-first React Router navigation
 - offline fallback screen

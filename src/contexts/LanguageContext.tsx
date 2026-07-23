@@ -9,10 +9,11 @@ interface LangCtx {
 const Ctx = createContext<LangCtx | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<string>(() => localStorage.getItem('lang') || 'en');
+  const [lang, setLang] = useState<string>(() => localStorage.getItem('lang') === 'hi' ? 'hi' : 'en');
   const setLangPersist = (l: string) => {
-    setLang(l);
-    localStorage.setItem('lang', l);
+    const supported = l === 'hi' ? 'hi' : 'en';
+    setLang(supported);
+    localStorage.setItem('lang', supported);
   };
   return (
     <Ctx.Provider value={{ lang, setLang: setLangPersist, t: (k) => translate(lang, k) }}>

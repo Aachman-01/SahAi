@@ -6,7 +6,6 @@ import { PublicLayout } from '@/layouts/PublicLayout';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 
 import LandingPage from '@/pages/LandingPage';
-import LanguagePage from '@/pages/LanguagePage';
 import LoginPage from '@/pages/LoginPage';
 import AuthCallbackPage from '@/pages/AuthCallbackPage';
 import ChatPage from '@/pages/ChatPage';
@@ -28,7 +27,7 @@ import NotFoundPage from '@/pages/NotFoundPage';
 import MaintenancePage from '@/pages/MaintenancePage';
 
 import { Toaster } from 'react-hot-toast';
-import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
+import { PwaInstallProvider } from '@/contexts/PwaInstallContext';
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -36,7 +35,6 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<PublicLayout><LandingPage /></PublicLayout>} />
-        <Route path="/language" element={<LanguagePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/chat" element={<ChatPage />} />
@@ -67,9 +65,8 @@ function AnimatedRoutes() {
 
 export default function App() {
   return (
-    <>
+    <PwaInstallProvider>
       <AnimatedRoutes />
-      <PwaInstallPrompt />
       <Toaster
         position="top-right"
         toastOptions={{
@@ -82,6 +79,6 @@ export default function App() {
           },
         }}
       />
-    </>
+    </PwaInstallProvider>
   );
 }

@@ -5,6 +5,7 @@ import { Phone, Mail, Shield, User, Chrome, Sparkles, ArrowRight, Zap } from 'lu
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -102,7 +103,10 @@ export default function LoginPage() {
   ];
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
+    <div className="relative min-h-screen grid lg:grid-cols-2">
+      <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+        <LanguageSwitcher />
+      </div>
       {/* Left brand panel */}
       <div className="hidden lg:flex relative gradient-primary p-12 flex-col justify-between text-white overflow-hidden">
         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 30% 20%, white 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
@@ -117,7 +121,7 @@ export default function LoginPage() {
           <p className="mt-4 text-white/90 max-w-md">AI-powered business profile, UPI QR, mini website, marketing kit & government scheme recommendations — in minutes.</p>
           <div className="mt-8 flex gap-6 text-sm">
             <div><p className="text-2xl font-bold">20M+</p><p className="text-white/80">Vendors</p></div>
-            <div><p className="text-2xl font-bold">9</p><p className="text-white/80">Languages</p></div>
+            <div><p className="text-2xl font-bold">2</p><p className="text-white/80">Languages</p></div>
             <div><p className="text-2xl font-bold">100%</p><p className="text-white/80">Free</p></div>
           </div>
         </div>
@@ -147,7 +151,7 @@ export default function LoginPage() {
           <div className="mt-6 space-y-4">
             {tab === 'phone' && (
               <>
-                <Input label="Phone number" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} icon={<Phone className="h-4 w-4" />} />
+                <Input label="Phone number" value={phone} onChange={(e) => setPhone(e.target.value)} icon={<Phone className="h-4 w-4" />} />
                 {otpSent && <Input label="Enter OTP" placeholder="1234" value={otp} onChange={(e) => setOtp(e.target.value)} maxLength={4} />}
                 {!otpSent ? (
                   <Button className="w-full" onClick={sendOtp} disabled={busy}>Send OTP</Button>
@@ -207,7 +211,7 @@ export default function LoginPage() {
             </Button>
           </div>
           <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-center text-xs text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-            You can try the features as a guest.
+          You can try the features as a guest.
           </p>
 
           <p className="mt-6 text-center text-xs text-gray-500">

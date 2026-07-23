@@ -1,12 +1,14 @@
 import { type ReactNode, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Menu, Moon, Sun, Bell } from 'lucide-react';
+import { Menu, Moon, Sun, Bell, Download } from 'lucide-react';
 import { Sidebar } from '@/components/Sidebar';
 import { CommandPalette } from '@/components/CommandPalette';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/hooks/useApi';
+import { usePwaInstall } from '@/contexts/PwaInstallContext';
+import toast from 'react-hot-toast';
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -15,7 +17,15 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const loc = useLocation();
   const nav = useNavigate();
   const { data: notifications = [] } = useNotifications();
+  const { isInstalled, install } = usePwaInstall();
   const unread = notifications.filter((n) => !n.read).length;
+
+  const installApp = async () => {
+    const outcome = await install();
+    if (outcome === 'unavailable') {
+      toast('Open your browser menu and choose “Install app” or “Add to Home Screen”.');
+    }
+  };
 
   const titleMap: Record<string, string> = {
     '/dashboard': 'Dashboard',
@@ -45,10 +55,15 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
                   <Menu className="h-5 w-5" />
                 </button>
                 <motion.h1 key={title} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-                  className="text-lg font-bold tracking-tight">{title}</motion.h1>
+                  className="max-w-[88px] truncate text-base font-bold tracking-tight sm:max-w-none sm:text-lg">{title}</motion.h1>
               </div>
-              <div className="flex items-center gap-2">
-                <CommandPalette />
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                {!isInstalled && (
+                  <button onClick={installApp} className="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-2.5 py-2 text-xs font-semibold text-white shadow-soft hover:bg-primary-700" title="Install SahAI">
+                    <Download className="h-4 w-4" /> <span>Install App</span>
+                  </button>
+                )}
+                <div className="hidden sm:block"><CommandPalette /></div>
                 <button
                   onClick={() => nav('/dashboard/notifications')}
                   aria-label="Notifications"
@@ -65,7 +80,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
                 <button onClick={toggle} className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-zinc-800">
                   {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                 </button>
-                <div className="h-8 w-8 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-bold">
+                <div className="hidden h-8 w-8 rounded-full bg-primary-600 text-white sm:flex items-center justify-center text-sm font-bold">
                   {user?.name?.[0] ?? 'V'}
                 </div>
               </div>

@@ -3,13 +3,6 @@ import type { Language } from '@/types';
 export const LANGUAGES: Language[] = [
   { code: 'en', name: 'English', native: 'English', flag: '🇬🇧' },
   { code: 'hi', name: 'Hindi', native: 'हिन्दी', flag: '🇮🇳' },
-  { code: 'ta', name: 'Tamil', native: 'தமிழ்', flag: '🇮🇳' },
-  { code: 'mr', name: 'Marathi', native: 'मराठी', flag: '🇮🇳' },
-  { code: 'gu', name: 'Gujarati', native: 'ગુજરાતી', flag: '🇮🇳' },
-  { code: 'bn', name: 'Bengali', native: 'বাংলা', flag: '🇮🇳' },
-  { code: 'te', name: 'Telugu', native: 'తెలుగు', flag: '🇮🇳' },
-  { code: 'kn', name: 'Kannada', native: 'ಕನ್ನಡ', flag: '🇮🇳' },
-  { code: 'ml', name: 'Malayalam', native: 'മലയാളം', flag: '🇮🇳' },
 ];
 
 type Dict = Record<string, string>;
