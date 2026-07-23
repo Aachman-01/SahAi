@@ -9,6 +9,7 @@ const { db, kvGet, kvSet, seed, hashPassword, verifyPassword, ready: databaseRea
 const cloudinaryStorage = require('./cloudinary');
 
 const PORT = process.env.PORT || 4000;
+const LOCAL_GUEST_TOKEN = 'sahai-local-guest-v1';
 const ALLOW_DEMO_AUTH = process.env.ALLOW_DEMO_AUTH === 'true' ||
   (databaseProvider === 'sqlite' && process.env.ALLOW_DEMO_AUTH !== 'false');
 const uid = (p = 'id') => `${p}_${crypto.randomBytes(6).toString('hex')}`;
@@ -97,6 +98,9 @@ async function getUser(req) {
   const auth = req.headers['authorization'] || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   if (!token) return null;
+  if (token === LOCAL_GUEST_TOKEN) {
+    return { id: 'local_guest', name: 'Guest', phone: '', email: null, role: 'guest', vendorId: null, localOnly: true };
+  }
   const sess = await db.prepare('SELECT userId FROM sessions WHERE token = ?').get(token);
   if (!sess) return null;
   return await db.prepare('SELECT * FROM users WHERE id = ?').get(sess.userId) || null;
@@ -277,17 +281,14 @@ route('POST', '/api/auth/google', async (req, res, _p, body) => {
   send(res, 200, { token, user: publicUser(user) });
 }, false);
 
-// Production-safe guest access. Each guest receives an isolated workspace
-// instead of sharing the seeded demo user's business data.
+// Stateless guest access. All guest workspace data is handled by the browser's
+// sessionStorage; this route creates no user, vendor, session, upload or KV row.
 route('POST', '/api/auth/guest', async (_req, res) => {
-  const userId = uid('u_guest');
-  const guestName = 'Guest';
-  const vendorId = await createVendorRecord('Guest Business', '');
-  await db.prepare('INSERT INTO users (id,name,phone,email,role,avatar,vendorId,passwordHash,passwordSalt) VALUES (?,?,?,?,?,?,?,?,?)')
-    .run(userId, guestName, '', null, 'guest', null, vendorId, null, null);
-  const token = await startSession(userId);
-  const user = await db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
-  send(res, 200, { token, user: publicUser(user) });
+  send(res, 200, {
+    token: LOCAL_GUEST_TOKEN,
+    user: { id: 'local_guest', name: 'Guest', phone: '', role: 'guest' },
+    localOnly: true,
+  });
 }, false);
 
 route('POST', '/api/auth/login', async (req, res, _p, body) => {
@@ -304,6 +305,13 @@ route('POST', '/api/auth/login', async (req, res, _p, body) => {
   // Demo/quick access is enabled locally but disabled by default with PostgreSQL.
   if (!ALLOW_DEMO_AUTH) return send(res, 400, { error: 'Use email and password to sign in' });
   const role = body.role || 'vendor';
+  if (role === 'guest') {
+    return send(res, 200, {
+      token: LOCAL_GUEST_TOKEN,
+      user: { id: 'local_guest', name: 'Guest', phone: '', role: 'guest' },
+      localOnly: true,
+    });
+  }
   if (role === 'phone' || body.method === 'phone') {
     if (body.otp && body.otp !== '1234') return send(res, 401, { error: 'Invalid OTP. Use 1234' });
   }
@@ -328,7 +336,7 @@ route('GET', '/api/auth/me', async (req, res) => {
 route('POST', '/api/auth/logout', async (req, res) => {
   const auth = req.headers['authorization'] || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  if (token) await db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+  if (token && token !== LOCAL_GUEST_TOKEN) await db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
   send(res, 200, { ok: true });
 });
 
@@ -931,6 +939,40 @@ route('GET', '/api/health', async (req, res) => send(res, 200, {
   googleAuth: Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY)),
 }), false);
 
+// Remove obsolete database-backed guest workspaces created by older releases.
+// New guest sessions are stateless and never enter these tables.
+async function cleanupLegacyGuestData() {
+  const guests = await db.prepare("SELECT id, vendorId FROM users WHERE role = 'guest'").all();
+  let cleaned = 0;
+  for (const guest of guests) {
+    const uploads = await db.prepare('SELECT * FROM uploaded_files WHERE ownerId = ?').all(guest.id);
+    for (const upload of uploads) {
+      try { await deleteUploadIfOwned(upload.relPath, guest.id); }
+      catch (error) { console.warn('Could not remove a legacy guest upload:', error && error.message || error); }
+    }
+    await db.prepare('DELETE FROM sessions WHERE userId = ?').run(guest.id);
+    await db.prepare('DELETE FROM notifications WHERE userId = ?').run(guest.id);
+    await db.prepare('DELETE FROM scheme_bookmarks WHERE userId = ?').run(guest.id);
+    await db.prepare('DELETE FROM kv WHERE scope = ?').run('user:' + guest.id);
+    await db.prepare('DELETE FROM uploaded_files WHERE ownerId = ?').run(guest.id);
+    await db.prepare('DELETE FROM users WHERE id = ?').run(guest.id);
+
+    if (guest.vendorId) {
+      const otherOwner = await db.prepare('SELECT id FROM users WHERE vendorId = ? LIMIT 1').get(guest.vendorId);
+      if (!otherOwner) {
+        await db.prepare('DELETE FROM gallery_images WHERE vendorId = ?').run(guest.vendorId);
+        await db.prepare('DELETE FROM products WHERE vendorId = ?').run(guest.vendorId);
+        await db.prepare('DELETE FROM transactions WHERE vendorId = ?').run(guest.vendorId);
+        await db.prepare('DELETE FROM reviews WHERE vendorId = ?').run(guest.vendorId);
+        await db.prepare('DELETE FROM kv WHERE scope = ?').run('vendor:' + guest.vendorId);
+        await db.prepare('DELETE FROM vendors WHERE id = ?').run(guest.vendorId);
+      }
+    }
+    cleaned += 1;
+  }
+  if (cleaned) console.log(`  Removed ${cleaned} legacy database guest workspace${cleaned === 1 ? '' : 's'}`);
+}
+
 // ---------- static file serving for uploads ----------
 function serveUpload(req, res, urlPath) {
   const rel = urlPath.replace(/^\/uploads\//, '');
@@ -981,6 +1023,13 @@ const server = http.createServer(async (req, res) => {
     if (pathname.startsWith('/api/admin/') && user.role !== 'admin') {
       return send(res, 403, { error: 'Admin access required' });
     }
+    if (user.localOnly) {
+      const allowedRead = req.method === 'GET' && pathname.startsWith('/api/vendors/');
+      const allowedAuth = pathname === '/api/auth/me' || pathname === '/api/auth/logout';
+      if (!allowedRead && !allowedAuth) {
+        return send(res, 403, { error: 'Guest workspace is browser-local; database writes are disabled' });
+      }
+    }
   }
 
   let body = {};
@@ -1001,7 +1050,8 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-databaseReady.then(() => {
+databaseReady.then(async () => {
+  await cleanupLegacyGuestData();
   server.listen(PORT, () => {
     console.log(`\n  SahAI backend running on http://localhost:${PORT}`);
     console.log(`  Database: ${databaseProvider}`);

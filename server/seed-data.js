@@ -86,7 +86,6 @@ const MARKETING = [
 const USERS = [
   { id: 'u_vendor', name: '', phone: '', email: 'vendor@sahai.in', role: 'vendor', vendorId: 'v1' },
   { id: 'u_admin', name: 'Admin', phone: '', email: 'admin@sahai.in', role: 'admin', vendorId: null },
-  { id: 'u_guest', name: 'Guest', phone: '', email: 'guest@sahai.in', role: 'guest', vendorId: 'v1' },
 ];
 
 module.exports = {

@@ -28,7 +28,8 @@ export default function SettingsPage() {
   const { data: businessProfile } = useBusinessProfile();
   const updateSettings = useUpdateSettings();
   const updateBusinessProfile = useUpdateBusinessProfile();
-  const { deleteAccount } = useAuth();
+  const { user, deleteAccount } = useAuth();
+  const isGuest = user?.role === 'guest';
   const navigate = useNavigate();
 
   const [notif, setNotif] = useState<NotificationPrefs>({ payments: true, reviews: true, schemes: false, marketing: true });
@@ -94,7 +95,7 @@ export default function SettingsPage() {
     try {
       setDeleting(true);
       await deleteAccount();
-      toast.success('Your account and associated data were permanently deleted');
+      toast.success(isGuest ? 'Local guest data cleared' : 'Your account and associated data were permanently deleted');
       navigate('/', { replace: true });
     } catch (err: any) {
       toast.error(err?.response?.data?.error || 'Could not delete account');
@@ -198,10 +199,15 @@ export default function SettingsPage() {
 
       <Card className="p-6">
         <h3 className="font-bold mb-4 flex items-center gap-2"><Database className="h-4 w-4" /> Data & Backup</h3>
+        {isGuest && (
+          <p className="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+            This is a temporary browser session. Guest profiles, products, images and settings are never uploaded or written to the database. Logging out or closing the browser session clears them.
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => toast.success('Backup downloaded')}><Database className="h-4 w-4" /> Download Backup</Button>
-          <Button variant="outline" onClick={() => toast.success('Restoring...')}><Save className="h-4 w-4" /> Restore</Button>
-          <Button variant="danger" onClick={() => setDeleteOpen(true)} disabled={deleting}><Trash2 className="h-4 w-4" /> Delete Account</Button>
+          {!isGuest && <Button variant="outline" onClick={() => toast.success('Backup downloaded')}><Database className="h-4 w-4" /> Download Backup</Button>}
+          {!isGuest && <Button variant="outline" onClick={() => toast.success('Restoring...')}><Save className="h-4 w-4" /> Restore</Button>}
+          <Button variant="danger" onClick={() => setDeleteOpen(true)} disabled={deleting}><Trash2 className="h-4 w-4" /> {isGuest ? 'Clear Guest Data' : 'Delete Account'}</Button>
         </div>
       </Card>
 
@@ -213,9 +219,9 @@ export default function SettingsPage() {
         open={deleteOpen}
         onClose={() => !deleting && setDeleteOpen(false)}
         onConfirm={permanentlyDeleteAccount}
-        title="Permanently delete account?"
-        message="This permanently deletes your email, business profile, products, transactions, reviews, settings, website data, notifications, gallery, uploaded Cloudinary images, and login sessions. This cannot be undone."
-        confirmLabel="Delete account permanently"
+        title={isGuest ? 'Clear local guest data?' : 'Permanently delete account?'}
+        message={isGuest ? 'This clears the temporary guest profile, products, images and settings stored in this browser session. No database account exists for this guest.' : 'This permanently deletes your email, business profile, products, transactions, reviews, settings, website data, notifications, gallery, uploaded Cloudinary images, and login sessions. This cannot be undone.'}
+        confirmLabel={isGuest ? 'Clear guest data' : 'Delete account permanently'}
         loading={deleting}
         tone="danger"
       />

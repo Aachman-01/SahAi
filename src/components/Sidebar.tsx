@@ -81,7 +81,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate">{user?.name ?? 'Vendor'}</p>
-                <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+                <p className="text-xs text-gray-500">{user?.role === 'guest' ? 'Local guest · not saved' : user?.role}</p>
               </div>
             </div>
             <button onClick={() => { logout(); nav('/'); }} className="mt-2 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">

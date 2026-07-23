@@ -160,11 +160,11 @@ SUPABASE_ANON_KEY=your_publishable_or_anon_key
 
 Never use `SUPABASE_SERVICE_ROLE_KEY` in the frontend. The Google Client Secret stays only inside Supabase's provider configuration. The login request includes `prompt=select_account`, so Google displays the account chooser even when a Google session already exists.
 
-Guest login uses `/api/auth/guest` and creates a separate guest user/vendor workspace. It does not re-enable shared demo-role authentication.
+Guest login uses a stateless `/api/auth/guest` identity and creates **no** user, vendor, session, upload, KV, product, notification, or other database row. Guest dashboard reads/writes are intercepted by `src/lib/guestStore.ts` and kept only in browser `sessionStorage`; processed guest images remain local data URLs and are never sent to Cloudinary. Guest state is cleared on logout or when the browser session ends. The backend router rejects all stateless-guest mutations, while allowing only authenticated read-only vendor discovery. Startup cleanup removes database-backed guest workspaces created by older releases.
 
 ## Permanent account deletion
 
-Settings → Delete Account calls the authenticated `DELETE /api/account` endpoint. It deletes owned Cloudinary/local uploads first, then removes sessions, notifications, bookmarks, user settings, vendor QR/website/business-card records, gallery, products, transactions, reviews, vendor profile, and finally the `users` row containing the email. Guest and password accounts need no additional provider cleanup.
+For registered users, Settings → Delete Account calls the authenticated `DELETE /api/account` endpoint. It deletes owned Cloudinary/local uploads first, then removes sessions, notifications, bookmarks, user settings, vendor QR/website/business-card records, gallery, products, transactions, reviews, vendor profile, and finally the `users` row containing the email. Password accounts need no additional provider cleanup. Local Guests have no database account; their Settings action only clears browser-session data.
 
 Google users are tracked by Supabase Auth user ID in `users.authProviderId`. Add this backend-only Render variable so the API can also delete the corresponding Supabase Auth identity:
 

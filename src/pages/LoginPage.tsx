@@ -86,7 +86,7 @@ export default function LoginPage() {
     try {
       setBusy(true);
       await loginAsGuest();
-      toast.success('Guest workspace created');
+      toast.success('Local guest session started — nothing will be saved to the database');
       nav('/dashboard');
     } catch (err: any) {
       toast.error(err?.response?.data?.error || 'Guest login failed');
@@ -203,9 +203,12 @@ export default function LoginPage() {
               <Chrome className="h-4 w-4" /> Google
             </Button>
             <Button variant="outline" onClick={continueAsGuest} disabled={busy}>
-              <Sparkles className="h-4 w-4" /> Guest
+              <Sparkles className="h-4 w-4" /> Local Guest
             </Button>
           </div>
+          <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-center text-xs text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+            Guest activity stays only in this browser tab. It is never saved to the database or Cloudinary and is cleared on logout or when the browser session ends.
+          </p>
 
           <p className="mt-6 text-center text-xs text-gray-500">
             By continuing you agree to our Terms & Privacy Policy.
