@@ -207,7 +207,7 @@ export default function LoginPage() {
             </Button>
           </div>
           <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-center text-xs text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-            Guest activity stays only in this browser tab. It is never saved to the database or Cloudinary and is cleared on logout or when the browser session ends.
+            You can try the features as a guest.
           </p>
 
           <p className="mt-6 text-center text-xs text-gray-500">
